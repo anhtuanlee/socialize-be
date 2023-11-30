@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String   @id @default(uuid())
+  fullName String
+  userName String   @unique
+  avatar   String   @default("https://img.freepik.com/premium-vector/account-icon-user-icon-vector-graphics_292645-552.jpg?w=740")
+  cover    String   @default("https://climate.onep.go.th/wp-content/uploads/2020/01/default-image.jpg")
+  email    String   @unique
+  phone    Int      @unique
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  post                   Post[]
+  comments               Comments[]      @relation("CommentUser")
+  reaction               Reaction[]
+  views                  View[]
+  friends                Friend[]        @relation("UserFriends")
+  followedBy             User[]          @relation("UserFollows")
+  following              User[]          @relation("UserFollows")
+  incomingFriendRequests FriendRequest[] @relation("Receiver")
+  outgoingFriendRequests FriendRequest[] @relation("Sender")
+}
+
+model Friend {
+  id                     String                 @id @default(uuid())
+  user                   User                   @relation("UserFriends", fields: [userName], references: [userName])
+  userName               String
+  relationshipStatus     RelationshipStatus
+  notificationPreference NotificationPreference
+}
+
+model Post {
+  id       String     @id @default(uuid())
+  content  String
+  img      String[]
+  user     User       @relation(fields: [userName], references: [userName])
+  userName String
+  comment  Comments[]
+  reaction Reaction[]
+  views    View[]
+  createAt DateTime   @default(now())
+  updateAt DateTime   @updatedAt
+}
+
+model Comments {
+  id        String     @id @unique @default(uuid())
+  content   String
+  img       String?
+  createAt  DateTime   @default(now())
+  updateAt  DateTime   @updatedAt
+  userName  String
+  user      User       @relation("CommentUser", fields: [userName], references: [userName])
+  idPost    String
+  post      Post       @relation(fields: [idPost], references: [id])
+  reaction  Reaction[]
+  Children  Comments[] @relation("Comment_Children")
+  parent    Comments?  @relation("Comment_Children", fields: [parent_id], references: [id])
+  parent_id String?
+}
+
+model Reaction {
+  id        String       @id @default(uuid())
+  type      TypeReaction
+  userName  String
+  User      User         @relation(fields: [userName], references: [userName])
+  commentId String
+  comment   Comments     @relation(fields: [commentId], references: [id])
+  postId    String
+  post      Post         @relation(fields: [postId], references: [id])
+  // storyId   String
+  // story     Stories      @relation(fields: [storyId], references: [id])
+}
+
+model FriendRequest {
+  id         String           @id @default(uuid())
+  senderId   String
+  sender     User             @relation("Sender", fields: [senderId], references: [id])
+  receiverId String
+  receiver   User             @relation("Receiver", fields: [receiverId], references: [id])
+  status     FriendshipStatus
+}
+
+model View {
+  id       String   @id @default(uuid())
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  User     User?   @relation(fields: [userName], references: [userName])
+  userName String?
+  post     Post    @relation(fields: [postId], references: [id])
+  postId   String
+}
+
+enum RelationshipStatus {
+  FAMILY
+  FRIEND
+  ACQUAINTANCE
+}
+
+enum NotificationPreference {
+  MUTED_UNTIL_TOMORROW
+  MUTED_FOREVER
+  NORMAL
+}
+
+enum TypeReaction {
+  LIKE
+  HAHA
+  LOVE
+  CRY
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELED
+}
+
+// model Stories {
+//   id       String     @id @default(uuid())
+//   content  String
+//   userName   Int
+//   user     User      @relation(fields: [userName], references: [id])
+//   comment  Comments[]
+//   reaction Reaction[]
+//   img      String
+// }
