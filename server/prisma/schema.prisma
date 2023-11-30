@@ -11,15 +11,18 @@ datasource db {
 }
 
 model User {
-  id       String   @id @default(uuid())
-  fullName String
-  userName String   @unique
-  avatar   String   @default("https://img.freepik.com/premium-vector/account-icon-user-icon-vector-graphics_292645-552.jpg?w=740")
-  cover    String   @default("https://climate.onep.go.th/wp-content/uploads/2020/01/default-image.jpg")
-  email    String   @unique
-  phone    Int      @unique
-  createAt DateTime @default(now())
-  updateAt DateTime @updatedAt
+  id        String     @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String     @unique
+  userName  String     @unique
+  avatar    String     @default("https://img.freepik.com/premium-vector/account-icon-user-icon-vector-graphics_292645-552.jpg?w=740")
+  cover     String     @default("https://climate.onep.go.th/wp-content/uploads/2020/01/default-image.jpg")
+  phone     Int        @unique
+  bithday   DateTime
+  gender    TypeGender
+  createAt  DateTime   @default(now())
+  updateAt  DateTime   @updatedAt
 
   post                   Post[]
   comments               Comments[]      @relation("CommentUser")
@@ -30,6 +33,21 @@ model User {
   following              User[]          @relation("UserFollows")
   incomingFriendRequests FriendRequest[] @relation("Receiver")
   outgoingFriendRequests FriendRequest[] @relation("Sender")
+  role                   Role            @default(USER)
+  auth                   Auth?
+
+  @@unique([userName, email, phone])
+}
+
+model Auth {
+  id       String @id @default(uuid())
+  userName String @unique
+  email    String @unique
+  phone    Int    @unique
+  password String
+  user     User   @relation(fields: [userName, email, phone], references: [userName, email, phone], onDelete: Cascade)
+
+  @@unique([userName, email, phone])
 }
 
 model Friend {
@@ -119,6 +137,23 @@ enum TypeReaction {
   HAHA
   LOVE
   CRY
+}
+
+enum Role {
+  ADMIN
+  USER
+  MANAGER
+}
+
+enum TypeAuth {
+  JWT
+  EMAIl
+}
+
+enum TypeGender {
+  MALE
+  FEMALE
+  OTHERS
 }
 
 enum FriendshipStatus {

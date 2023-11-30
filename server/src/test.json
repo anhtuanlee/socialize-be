@@ -1,0 +1,25 @@
+{
+	"register": {
+		"firstName": "Anh Tuan",
+		"lastName": "Le",
+		"email": "anhtuan.devfe1@gmail.com",
+		"password": "ocho123",
+		"phone": 987654321,
+		"bithday": "2013-02-14T13:15:03-08:00",
+		"gender": "MALE"
+	},
+
+	"login": {
+		"email": "anhtuan.devfe1@gmail.com",
+		"password": "ocho123"
+	},
+	"update": {
+		"firstName": "Anh Tuan",
+		"lastName": "Le",
+		"email": "anhtuan.devfe1@gmail.com",
+		"password": "ocho123",
+		"phone": 987654321,
+		"bithday": "2013-02-14T13:15:03-08:00",
+		"gender": "MALE"
+	}
+}

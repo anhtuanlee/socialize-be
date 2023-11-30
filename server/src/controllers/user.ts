@@ -1,28 +1,62 @@
 import { Response, Request } from "express";
 import prisma from "../db";
-export const getCurrentUserController = (req: Request, res: Response) => {
-    res.status(200).json({
-        status: "success",
-        currentUser: {
-            id: 123,
-            email: "xx@gmail.com",
-        },
-    });
-};
 
-export const seedUserController = async (req: Request, res: Response) => {
-    await prisma.user.create({
-        data: {
-            fullName: "Ke thu doi",
-            email: "kethudoi@gmail.com",
-            userName: "kethudoi",
-            phone: 123432223,
-        },
-    });
-    res.json("Create Success");
-};
+export const userController = {
+    getUserCurrent: async (req: Request, res: Response) => {
+        try {
+            const userName = req.params.userName;
+            const dataUser = await prisma.user.findUnique({
+                where: {
+                    userName: userName,
+                },
+            });
+            if (dataUser) {
+                res.status(200).json({
+                    data: dataUser,
+                });
+            } else {
+                res.status(403).json({
+                    messenger: "Haven't account !!!"
+                })
+            }
+        } catch (err) {
+            res.status(404).json({
+                messenger: "You're not authorization",
+            });
+        }
+    },
 
-export const getDataAllUserController = async (req: Request, res: Response) => {
-    const dataUser = await prisma.user.findMany();
-    res.status(200).json(dataUser);
+    deleteUser: async (req: Request, res: Response) => {
+        const userName = req.params.userName;
+
+        const userDel = await prisma.user.delete({
+            where: {
+                userName: userName,
+            },
+        });
+        res.json({
+            messenger: "You was delete success",
+            infoUser: userDel,
+        });
+    },
+    updateUser: async (req: Request, res: Response) => {
+        try {
+            const { userName } = req.params;
+            const data = req.body;
+            await prisma.user.update({
+                where: {
+                    userName: userName,
+                },
+                data: data,
+            });
+            res.status(201).json({
+                messenger: "Update info success !!!",
+            });
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({
+                message: "Have wrong error",
+            });
+        }
+    },
 };
