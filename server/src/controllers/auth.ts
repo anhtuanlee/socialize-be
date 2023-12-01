@@ -1,28 +1,20 @@
-import { Response, Request } from "express";
-import prisma from "../db";
-import jwt from "jsonwebtoken";
-import { generatePassword, replaceStringNoSpace } from "../helper";
-import bcrypt, { hash } from "bcrypt";
-import { TUser } from "../types/global";
+import bcrypt from 'bcrypt';
+import { NextFunction, Request, Response } from 'express';
+import prisma from '../db/db';
+import jwt from 'jsonwebtoken';
+import { generateAccessToken, generatePassword, generateRefeshToken, replaceStringNoSpace } from '../helper';
+import { client } from '../db/redisdb';
 
 export const authController = {
-    generateAccessToken: (user: TUser) => {
-        return jwt.sign(
-            { id: user!.id, userName: user!.userName, role: user!.role },
-            process.env.JWT_SECRET!,
-            {
-                expiresIn: "2d",
-            }
-        );
-    },
-    generateRefeshToken: (user: TUser) => {
-        return jwt.sign(
-            { id: user!.id, userName: user!.userName, role: user!.role },
-            process.env.JWT_REFESH_SECRET!,
-            {
-                expiresIn: "2d",
-            }
-        );
+    verifyPassword: async (res: Response, passwordCurrent: string, passwordCheck: string) => {
+        const isValidPassword = await bcrypt.compare(passwordCheck, passwordCurrent);
+
+        if (!isValidPassword) {
+            res.status(404).json({
+                messenger: 'Wrong Password',
+            });
+        }
+        return isValidPassword;
     },
     register: async (req: Request, res: Response) => {
         try {
@@ -33,11 +25,7 @@ export const authController = {
                     firstName: data.firstName,
                     lastName: data.lastName,
                     email: data.email,
-                    userName: replaceStringNoSpace(
-                        data.firstName,
-                        data.lastName,
-                        data.phone.toString().slice(-2)
-                    ),
+                    userName: replaceStringNoSpace(data.firstName, data.lastName, data.phone.toString().slice(-2)),
                     bithday: data.bithday,
                     gender: data.gender,
                     phone: data.phone,
@@ -56,28 +44,25 @@ export const authController = {
     login: async (req: Request, res: Response) => {
         try {
             const data = req.body;
-            console.log(data);
             const auth = await prisma.auth.findFirst({
                 where: {
-                    email: data.email,
+                    OR: [
+                        {
+                            email: data.email,
+                        },
+                        {
+                            phone: data.phone,
+                        },
+                    ],
                 },
             });
 
             if (!auth) {
                 res.status(404).json({
-                    messenger: "Wrong Username",
+                    messenger: 'Wrong Username',
                 });
             }
-            const isValidPassword = await bcrypt.compare(
-                data.password,
-                auth!.password
-            );
-
-            if (!isValidPassword) {
-                res.status(404).json({
-                    messenger: "Wrong Password",
-                });
-            }
+            const isValidPassword = await authController.verifyPassword(res, auth?.password!, data.password);
             if (isValidPassword && auth) {
                 const user = await prisma.user.findUnique({
                     where: { email: auth.email },
@@ -87,32 +72,86 @@ export const authController = {
                         userName: true,
                     },
                 });
-                const accessToken = authController.generateAccessToken(user);
-                const refreshToken = authController.generateRefeshToken(user);
-                res.cookie("refreshToken", refreshToken, {
+                const accessToken = generateAccessToken(user);
+                const refreshToken = generateRefeshToken(user);
+                await client.set(`refreshToken${user?.id}`, refreshToken, {
+                    EX: Number(process.env.TIME_REFRESH_REFRESHTOKEN_NUMBER),
+                    NX: true,
+                });
+
+                res.cookie('refreshToken', refreshToken, {
                     httpOnly: true,
-                    path: "/",
                     secure: false, // return true when deploy
-                    sameSite: "strict",
+                    sameSite: 'strict',
                 });
                 res.status(200).json({
-                    messenger: "Login Success",
+                    messenger: 'Login Success',
                     accessToken: accessToken,
                 });
             }
         } catch (err) {
             res.status(500).json({
-                message: "Have Wrong Error!",
+                message: 'Have Wrong Error!',
             });
         }
     },
     changePassword: async (req: Request, res: Response) => {
-        const { password, userName } = req.body;
-        await prisma.auth.update({
-            where: userName,
-            data: {
-                password: await generatePassword(password),
-            },
-        });
+        try {
+            const { password, passwordCurrent, userName } = req.body;
+            const auth = await prisma.auth.findFirst({
+                where: {
+                    userName: userName,
+                },
+            });
+            const isValidPassword = await authController.verifyPassword(res, auth?.password!, passwordCurrent);
+            if (isValidPassword && auth) {
+                await prisma.auth.update({
+                    where: {
+                        userName: userName,
+                    },
+                    data: {
+                        password: await generatePassword(password),
+                    },
+                });
+                res.status(200).json({
+                    meesenger: 'Change password success ',
+                });
+            } else {
+                res.status(403).json({
+                    messenger: 'Change password failed!',
+                });
+            }
+        } catch (err) {
+            res.status(404).json({
+                messenger: 'You cant change password',
+                error: err,
+            });
+        }
+    },
+    refreshToken: async (req: TVerifyRefreshToken, res: Response) => {
+        const { user } = req;
+
+        if (user) {
+            const newAccessToken = generateAccessToken(user);
+            res.status(200).json({
+                accessToken: newAccessToken,
+            });
+        }
+    },
+    logout: async (req: TVerifyRefreshToken, res: Response) => {
+        try {
+            const refreshTokenId = req.user?.id;
+            if (refreshTokenId) {
+                await client.del(`refreshToken${refreshTokenId}`);
+                res.status(200).json({
+                    messenger: 'Logout success!',
+                });
+                res.clearCookie('refreshToken');
+            }
+        } catch (err) {
+            res.status(404).json({
+                messenger: 'Your login session has expired !',
+            });
+        }
     },
 };

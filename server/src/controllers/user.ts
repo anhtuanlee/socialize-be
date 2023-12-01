@@ -1,5 +1,5 @@
 import { Response, Request } from "express";
-import prisma from "../db";
+import prisma from "../db/db";
 
 export const userController = {
     getUserCurrent: async (req: Request, res: Response) => {
