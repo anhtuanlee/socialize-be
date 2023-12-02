@@ -43,7 +43,7 @@ export const middleware = {
             try {
                 if (req.user) {
                     if (
-                        req.user.userName === req.params.userName ||
+                        req.user.user_name === req.params.user_name ||
                         req.user.role === "ADMIN"
                     ) {
                         next();

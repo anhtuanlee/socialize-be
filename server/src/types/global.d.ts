@@ -4,7 +4,7 @@ declare global {
     type TUser = {
         id: string;
         role: "USER" | "ADMIN" | "MANAGER";
-        userName: string;
+        user_name: string;
         iat?: number;
         exp?: number;
     } | null;

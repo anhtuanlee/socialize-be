@@ -1,5 +1,5 @@
 -- DropForeignKey
-ALTER TABLE "Auth" DROP CONSTRAINT "Auth_userName_email_fkey";
+ALTER TABLE "Auth" DROP CONSTRAINT "Auth_user_name_email_fkey";
 
 -- AddForeignKey
-ALTER TABLE "Auth" ADD CONSTRAINT "Auth_userName_email_fkey" FOREIGN KEY ("userName", "email") REFERENCES "User"("userName", "email") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Auth" ADD CONSTRAINT "Auth_user_name_email_fkey" FOREIGN KEY ("user_name", "email") REFERENCES "User"("user_name", "email") ON DELETE CASCADE ON UPDATE CASCADE;

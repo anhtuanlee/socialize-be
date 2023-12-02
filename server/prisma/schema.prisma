@@ -11,64 +11,72 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(uuid())
-  firstName String
-  lastName  String
-  email     String     @unique
-  userName  String     @unique
-  avatar    String     @default("https://img.freepik.com/premium-vector/account-icon-user-icon-vector-graphics_292645-552.jpg?w=740")
-  cover     String     @default("https://climate.onep.go.th/wp-content/uploads/2020/01/default-image.jpg")
-  phone     Int        @unique
-  bithday   DateTime
-  gender    TypeGender
-  createAt  DateTime   @default(now())
-  updateAt  DateTime   @updatedAt
+  id         String     @id @default(uuid())
+  first_name String
+  last_name  String
+  email      String     @unique
+  user_name  String     @unique
+  avatar     String     @default("https://img.freepik.com/premium-vector/account-icon-user-icon-vector-graphics_292645-552.jpg?w=740")
+  cover      String     @default("https://climate.onep.go.th/wp-content/uploads/2020/01/default-image.jpg")
+  phone      Int        @unique
+  bithday    DateTime
+  gender     TypeGender
+  createAt   DateTime   @default(now())
+  updateAt   DateTime   @updatedAt
 
-  post                   Post[]
-  comments               Comments[]      @relation("CommentUser")
-  reaction               Reaction[]
-  views                  View[]
-  friends                Friend[]        @relation("UserFriends")
-  followedBy             User[]          @relation("UserFollows")
-  following              User[]          @relation("UserFollows")
-  incomingFriendRequests FriendRequest[] @relation("Receiver")
-  outgoingFriendRequests FriendRequest[] @relation("Sender")
-  role                   Role            @default(USER)
-  auth                   Auth?
+  post        Post[]
+  comments    Comments[] @relation("CommentUser")
+  reaction    Reaction[]
+  views       View[]
+  // friends                Friend[]   @relation("UserFriends")
+  followed_by User[]     @relation("UserFollows")
+  following   User[]     @relation("UserFollows")
+  // incomingFriendRequests User[]     @relation("Receiver")
+  // outgoingFriendRequests User[]     @relation("Receiver")
+  role        Role       @default(USER)
+  auth        Auth?
+  friends     Friend[]
 
-  @@unique([userName, email, phone])
-}
-
-model Auth {
-  id       String @id @default(uuid())
-  userName String @unique
-  email    String @unique
-  phone    Int    @unique
-  password String
-  user     User   @relation(fields: [userName, email, phone], references: [userName, email, phone], onDelete: Cascade)
-
-  @@unique([userName, email, phone])
+  @@unique([user_name, email, phone])
 }
 
 model Friend {
-  id                     String                 @id @default(uuid())
-  user                   User                   @relation("UserFriends", fields: [userName], references: [userName])
-  userName               String
-  relationshipStatus     RelationshipStatus
-  notificationPreference NotificationPreference
+  user_name            String             @unique
+  friend_of            User               @relation(fields: [user_name], references: [user_name])
+  invite_friend_status TypeStatusInvite   @default(PENDING)
+  relationship         RelationshipStatus @default(FRIEND)
 }
 
+model Auth {
+  id        String @id @default(uuid())
+  user_name String @unique
+  email     String @unique
+  phone     Int    @unique
+  password  String
+  user      User   @relation(fields: [user_name, email, phone], references: [user_name, email, phone], onDelete: Cascade)
+
+  @@unique([user_name, email, phone])
+}
+
+// model Friend {
+//   id                     String                 @id @default(uuid())
+//   user                   User                   @relation("UserFriends", fields: [user_name], references: [user_name])
+//   user_name               String
+//   relationshipStatus     RelationshipStatus
+//   notificationPreference NotificationPreference @default(NORMAL)
+// }
+
 model Post {
-  id       String     @id @default(uuid())
-  content  String
-  img      String[]
-  user     User       @relation(fields: [userName], references: [userName])
-  userName String
-  comment  Comments[]
-  reaction Reaction[]
-  views    View[]
-  createAt DateTime   @default(now())
-  updateAt DateTime   @updatedAt
+  id        String     @id @default(uuid())
+  content   String
+  img       String[]
+  user      User       @relation(fields: [user_name], references: [user_name])
+  user_name String
+  comment   Comments[]
+  reaction  Reaction[]
+  views     View[]
+  createAt  DateTime   @default(now())
+  updateAt  DateTime   @updatedAt
 }
 
 model Comments {
@@ -77,36 +85,27 @@ model Comments {
   img       String?
   createAt  DateTime   @default(now())
   updateAt  DateTime   @updatedAt
-  userName  String
-  user      User       @relation("CommentUser", fields: [userName], references: [userName])
-  idPost    String
-  post      Post       @relation(fields: [idPost], references: [id])
+  user_name String
+  user      User       @relation("CommentUser", fields: [user_name], references: [user_name])
+  post_id   String
+  post      Post       @relation(fields: [post_id], references: [id])
   reaction  Reaction[]
-  Children  Comments[] @relation("Comment_Children")
+  children  Comments[] @relation("Comment_Children")
   parent    Comments?  @relation("Comment_Children", fields: [parent_id], references: [id])
   parent_id String?
 }
 
 model Reaction {
-  id        String       @id @default(uuid())
-  type      TypeReaction
-  userName  String
-  User      User         @relation(fields: [userName], references: [userName])
-  commentId String
-  comment   Comments     @relation(fields: [commentId], references: [id])
-  postId    String
-  post      Post         @relation(fields: [postId], references: [id])
+  id         String       @id @default(uuid())
+  type       TypeReaction
+  user_name  String
+  user       User         @relation(fields: [user_name], references: [user_name])
+  comment_id String
+  comment    Comments     @relation(fields: [comment_id], references: [id])
+  post_id    String
+  post       Post         @relation(fields: [post_id], references: [id])
   // storyId   String
   // story     Stories      @relation(fields: [storyId], references: [id])
-}
-
-model FriendRequest {
-  id         String           @id @default(uuid())
-  senderId   String
-  sender     User             @relation("Sender", fields: [senderId], references: [id])
-  receiverId String
-  receiver   User             @relation("Receiver", fields: [receiverId], references: [id])
-  status     FriendshipStatus
 }
 
 model View {
@@ -114,10 +113,10 @@ model View {
   createAt DateTime @default(now())
   updateAt DateTime @updatedAt
 
-  User     User?   @relation(fields: [userName], references: [userName])
-  userName String?
-  post     Post    @relation(fields: [postId], references: [id])
-  postId   String
+  user      User?   @relation(fields: [user_name], references: [user_name])
+  user_name String?
+  post      Post    @relation(fields: [post_id], references: [id])
+  post_id   String
 }
 
 enum RelationshipStatus {
@@ -130,6 +129,12 @@ enum NotificationPreference {
   MUTED_UNTIL_TOMORROW
   MUTED_FOREVER
   NORMAL
+}
+
+enum TypeStatusInvite {
+  PENDING
+  ACCEPT
+  REJECT
 }
 
 enum TypeReaction {
@@ -156,18 +161,11 @@ enum TypeGender {
   OTHERS
 }
 
-enum FriendshipStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  CANCELED
-}
-
 // model Stories {
 //   id       String     @id @default(uuid())
 //   content  String
-//   userName   Int
-//   user     User      @relation(fields: [userName], references: [id])
+//   user_name   Int
+//   user     User      @relation(fields: [user_name], references: [id])
 //   comment  Comments[]
 //   reaction Reaction[]
 //   img      String

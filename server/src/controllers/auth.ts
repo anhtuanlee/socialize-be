@@ -22,10 +22,10 @@ export const authController = {
             const hashed = await generatePassword(data.password);
             const dataAuth = await prisma.user.create({
                 data: {
-                    firstName: data.firstName,
-                    lastName: data.lastName,
+                    first_name: data.first_name,
+                    last_name: data.last_name,
                     email: data.email,
-                    userName: replaceStringNoSpace(data.firstName, data.lastName, data.phone.toString().slice(-2)),
+                    user_name: replaceStringNoSpace(data.first_name, data.last_name, data.phone.toString().slice(-2)),
                     bithday: data.bithday,
                     gender: data.gender,
                     phone: data.phone,
@@ -59,7 +59,7 @@ export const authController = {
 
             if (!auth) {
                 res.status(404).json({
-                    messenger: 'Wrong Username',
+                    messenger: 'Wrong user_name',
                 });
             }
             const isValidPassword = await authController.verifyPassword(res, auth?.password!, data.password);
@@ -69,7 +69,7 @@ export const authController = {
                     select: {
                         id: true,
                         role: true,
-                        userName: true,
+                        user_name: true,
                     },
                 });
                 const accessToken = generateAccessToken(user);
@@ -97,17 +97,17 @@ export const authController = {
     },
     changePassword: async (req: Request, res: Response) => {
         try {
-            const { password, passwordCurrent, userName } = req.body;
+            const { password, passwordCurrent, user_name } = req.body;
             const auth = await prisma.auth.findFirst({
                 where: {
-                    userName: userName,
+                    user_name: user_name,
                 },
             });
             const isValidPassword = await authController.verifyPassword(res, auth?.password!, passwordCurrent);
             if (isValidPassword && auth) {
                 await prisma.auth.update({
                     where: {
-                        userName: userName,
+                        user_name: user_name,
                     },
                     data: {
                         password: await generatePassword(password),

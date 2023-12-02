@@ -6,7 +6,7 @@ export const getAllPostUserController = async (req: Request, res: Response) => {
 
     const dataPost = await prisma.post.findMany({
         where: {
-            userName: user,
+            user_name: user,
         },
         include: {
             comment: true,

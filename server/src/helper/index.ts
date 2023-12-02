@@ -17,12 +17,12 @@ export const generatePassword = async (pass: string) => {
 };
 
 export const generateAccessToken = (user: TUser) => {
-    return jwt.sign({ id: user!.id, userName: user!.userName, role: user!.role }, process.env.JWT_SECRET!, {
+    return jwt.sign({ id: user!.id, user_name: user!.user_name, role: user!.role }, process.env.JWT_SECRET!, {
         expiresIn: process.env.TIME_REFRESH_ACCESSTOKEN,
     });
 };
 export const generateRefeshToken = (user: TUser) => {
-    return jwt.sign({ id: user!.id, userName: user!.userName, role: user!.role }, process.env.JWT_REFESH_SECRET!, {
+    return jwt.sign({ id: user!.id, user_name: user!.user_name, role: user!.role }, process.env.JWT_REFESH_SECRET!, {
         expiresIn: process.env.TIME_REFRESH_REFRESHTOKEN,
     });
 };
