@@ -16,36 +16,55 @@ model User {
   last_name  String
   email      String     @unique
   user_name  String     @unique
+  phone      Int        @unique
   avatar     String     @default("https://img.freepik.com/premium-vector/account-icon-user-icon-vector-graphics_292645-552.jpg?w=740")
   cover      String     @default("https://climate.onep.go.th/wp-content/uploads/2020/01/default-image.jpg")
-  phone      Int        @unique
-  bithday    DateTime
+  role       Role       @default(USER)
   gender     TypeGender
+  bithday    DateTime
   createAt   DateTime   @default(now())
   updateAt   DateTime   @updatedAt
 
-  post        Post[]
-  comments    Comments[] @relation("CommentUser")
-  reaction    Reaction[]
-  views       View[]
-  // friends                Friend[]   @relation("UserFriends")
-  followed_by User[]     @relation("UserFollows")
-  following   User[]     @relation("UserFollows")
-  // incomingFriendRequests User[]     @relation("Receiver")
-  // outgoingFriendRequests User[]     @relation("Receiver")
-  role        Role       @default(USER)
-  auth        Auth?
-  friends     Friend[]
+  auth          Auth?
+  friends       User[]          @relation("friends")
+  friendOf      User[]          @relation("friends")
+  invition_list FriendRequest[] @relation("InvitionList")
+  invited_list  FriendRequest[] @relation("InvitedList")
+  followed_by   User[]          @relation("UserFollows")
+  following     User[]          @relation("UserFollows")
+  post          Post[]
+  comments      Comments[]      @relation("CommentUser")
+  reaction      Reaction[]
+  views         View[]
 
   @@unique([user_name, email, phone])
 }
 
-model Friend {
-  user_name            String             @unique
-  friend_of            User               @relation(fields: [user_name], references: [user_name])
-  invite_friend_status TypeStatusInvite   @default(PENDING)
-  relationship         RelationshipStatus @default(FRIEND)
+model FriendRequest {
+  id                   String           @default(uuid())
+  invite_friend_status TypeStatusInvite @default(PENDING)
+  createAt             DateTime         @default(now())
+  updateAt             DateTime         @updatedAt
+
+  invition_name String
+  invited_name  String
+  invition      User   @relation("InvitionList", fields: [invition_name], references: [user_name], onDelete: Cascade, onUpdate: Cascade)
+  invited       User   @relation("InvitedList", fields: [invited_name], references: [user_name], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([invition_name, invited_name])
 }
+
+// handle later
+// model Friendship {
+//   id            String             @id @default(uuid())
+//   user_name     String             @unique
+//   friend_name   String
+//   createdAt     DateTime           @default(now())
+//   updatedAt     DateTime           @updatedAt
+//   relation_ship RelationshipStatus @default(FRIEND)
+//   user          User               @relation(fields: [user_name], references: [user_name])
+//   friend        User               @relation("friends", fields: [friend_name], references: [user_name], onDelete: Cascade, onUpdate: Cascade)
+// }
 
 model Auth {
   id        String @id @default(uuid())
@@ -53,18 +72,11 @@ model Auth {
   email     String @unique
   phone     Int    @unique
   password  String
-  user      User   @relation(fields: [user_name, email, phone], references: [user_name, email, phone], onDelete: Cascade)
+
+  user User @relation(fields: [user_name, email, phone], references: [user_name, email, phone], onDelete: Cascade)
 
   @@unique([user_name, email, phone])
 }
-
-// model Friend {
-//   id                     String                 @id @default(uuid())
-//   user                   User                   @relation("UserFriends", fields: [user_name], references: [user_name])
-//   user_name               String
-//   relationshipStatus     RelationshipStatus
-//   notificationPreference NotificationPreference @default(NORMAL)
-// }
 
 model Post {
   id        String     @id @default(uuid())
@@ -120,6 +132,7 @@ model View {
 }
 
 enum RelationshipStatus {
+  STRANGER
   FAMILY
   FRIEND
   ACQUAINTANCE
@@ -132,9 +145,9 @@ enum NotificationPreference {
 }
 
 enum TypeStatusInvite {
-  PENDING
-  ACCEPT
-  REJECT
+  PENDING // pending and cancel just rule of invition
+  CANCELING
+  ACCEPT // accept and reject just rule of invited 
 }
 
 enum TypeReaction {

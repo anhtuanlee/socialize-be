@@ -4,12 +4,12 @@ import { middleware } from '../middleware/middleware';
 
 const router = Router();
 
-//Get user Current
+//Get user Current 
 router.get('/:user_name', userController.getUserCurrent);
-//Delete User 
-router.post('/add', userController.addFriend)
+//Delete User
+router.post('/add', userController.addFriend);
 
 router.delete('/delete/:user_name', middleware.verifyTokenAndAdmin, userController.deleteUser);
 //Update Infor User
-router.put('/update/:user_name', middleware.verifyUpdateUser, userController.updateUser);
+
 export default router;
