@@ -4,7 +4,8 @@
 
 ## API
 
-- Authencation : /auth ### `Create USER` (`method: POST`): "URL/register" - body: {
+- Authencation : /auth
+- ### `Create USER` (`method: POST`): "URL/register" - body: {
   "firstName": **,
   "lastName": **,
   "email": **,
@@ -13,14 +14,14 @@
   "bithday": **,
   "gender": \_\_ }
 
-      ### `Login USER` (`method: POST`): "URL/login"
+    ### `Login USER` (`method: POST`): "URL/login"
       - body: {userName: "" or phone:""  , password: ""}
-      ### `Logout USER` (`method: POST`): "URL/logout"
+    ### `Logout USER` (`method: POST`): "URL/logout"
       - header: {cookie} , save refreshToken in cookie after login
-      ### `RefreshToken` (`method: POST`): "URL/refreshToken"
+   ### `RefreshToken` (`method: POST`): "URL/refreshToken"
       - header:{cookie} , after login, save refreshToken to cookie,
       generate new accessToken use every where.  "
-      ### `Change Password` (`method: PUT`): "URL/refreshToken"
+   ### `Change Password` (`method: PUT`): "URL/refreshToken"
       - header: { Authencation: Bearer: accessToken}
       - body: {userName: __, passwordCurrent: __, password: __}
       generate new accessToken use every where.  "
