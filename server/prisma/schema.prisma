@@ -40,30 +40,25 @@ model User {
   @@unique([user_name, email, phone])
 }
 
-model FriendRequest {
-  id                   String           @default(uuid())
-  invite_friend_status TypeStatusInvite @default(PENDING)
-  createAt             DateTime         @default(now())
-  updateAt             DateTime         @updatedAt
+// handle later 
+// model FriendOfUser {
+//   id          String   @id @default(uuid())
+//   user_name   String?
+//   friend_name String?
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
 
-  invition_name String
-  invited_name  String
-  invition      User   @relation("InvitionList", fields: [invition_name], references: [user_name], onDelete: Cascade, onUpdate: Cascade)
-  invited       User   @relation("InvitedList", fields: [invited_name], references: [user_name], onDelete: Cascade, onUpdate: Cascade)
+//   relation_ship RelationshipStatus? @default(FRIEND)
+//   friend        Friend?            @relation(fields: [friend_name], references: [friend_name], onDelete: Cascade, onUpdate: Cascade)
+//   user          User?              @relation(fields: [user_name], references: [user_name], onDelete: Cascade)
 
-  @@id([invition_name, invited_name])
-}
+//   @@index([user_name, friend_name])
+// }
 
-// handle later
-// model Friendship {
-//   id            String             @id @default(uuid())
-//   user_name     String             @unique
-//   friend_name   String
-//   createdAt     DateTime           @default(now())
-//   updatedAt     DateTime           @updatedAt
-//   relation_ship RelationshipStatus @default(FRIEND)
-//   user          User               @relation(fields: [user_name], references: [user_name])
-//   friend        User               @relation("friends", fields: [friend_name], references: [user_name], onDelete: Cascade, onUpdate: Cascade)
+// model Friend {
+//   id          String         @default(uuid())
+//   friend_name String         @unique
+//   users       FriendOfUser[]
 // }
 
 model Auth {
@@ -76,6 +71,20 @@ model Auth {
   user User @relation(fields: [user_name, email, phone], references: [user_name, email, phone], onDelete: Cascade)
 
   @@unique([user_name, email, phone])
+}
+
+model FriendRequest {
+  id                   String           @default(uuid())
+  invite_friend_status TypeStatusInvite @default(PENDING)
+  createAt             DateTime         @default(now())
+  updateAt             DateTime         @updatedAt
+
+  invition_name String
+  invited_name  String
+  invition      User   @relation("InvitionList", fields: [invition_name], references: [user_name], onDelete: Cascade, onUpdate: Cascade)
+  invited       User   @relation("InvitedList", fields: [invited_name], references: [user_name], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([invition_name, invited_name])
 }
 
 model Post {
