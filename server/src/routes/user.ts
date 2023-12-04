@@ -15,6 +15,6 @@ router.post('/friend/delete', userController.deleteFriendRequest);
 
 router.get('/friend', middleware.verifyToken, userController.getFriendOfUser);
 router.get('/friend/invite_request', middleware.verifyToken, userController.getListFriendRequest);
-router.get('/friend/follower', middleware.verifyToken, userController.getListFollower);
-router.get('/friend/mutual_friend', userController.getMutualFriend);
+router.get('/friend/followers', middleware.verifyToken, userController.getListFollower);
+router.get('/friend/mutual', middleware.verifyToken, userController.getMutualFriend);
 export default router;
