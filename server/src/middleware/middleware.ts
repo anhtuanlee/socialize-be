@@ -1,119 +1,144 @@
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { replaceStringNoSpace } from "../helper";
-import { client } from "../db/redisdb";
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { replaceStringNoSpace } from '../helper';
+import { client } from '../db/redisdb';
+import BadRequestError from '../error/BadRequestError';
 
 export const middleware = {
     // verify AccessToken
-    verifyToken: async (
-        req: TVerifyRefreshToken,
-        res: Response,
-        next: NextFunction
-    ) => {
-        const token = req.headers.token;
-        if (typeof token === "string") {
-            const accessToken = token.split(" ")[1];
-
-            jwt.verify(
-                accessToken,
-                process.env.JWT_SECRET!,
-                (err: any, user: any) => {
+    verifyToken: async (req: TVerifyRefreshToken, res: Response, next: NextFunction) => {
+        try {
+            const accessToken = req?.headers?.authorization;
+            if (typeof accessToken === 'string') {
+                const token = accessToken.split(' ')[1];
+                jwt.verify(token, process.env.JWT_SECRET!, (err: any, user: any) => {
                     if (err) {
-                        res.status(403).json({
-                            messenger: "Token is not valid!",
-                        });
+                        next(
+                            new BadRequestError({
+                                code: 401,
+                                context: {
+                                    message: 'You are not authoration! ',
+                                },
+                            })
+                        );
                     }
                     req.user = user;
                     next();
-                }
-            );
-        } else {
-            res.status(401).json({
-                messenger: "You're not authentication!",
-            });
+                });
+            } else {
+                next(
+                    new BadRequestError({
+                        code: 400,
+                        context: {
+                            message: 'AccessToken not exits!',
+                        },
+                    })
+                );
+            }
+        } catch (err) {
+            next(err);
         }
     },
     //verifyToken and role Admin
-    verifyTokenAndAdmin: (
-        req: TVerifyAccessToken,
-        res: Response,
-        next: NextFunction
-    ) => {
-        middleware.verifyToken(req, res, () => {
-            try {
+    verifyTokenAndAdmin: (req: TVerifyAccessToken, res: Response, next: NextFunction) => {
+        try {
+            middleware.verifyToken(req, res, () => {
                 if (req.user) {
                     if (
-                        req.user.user_name === req.params.user_name ||
-                        req.user.role === "ADMIN"
+                        // req.user.user_name === req.params.user_name ||
+                        // req.user.user_name === req.body.user_name ||
+                        req.user.role === 'ADMIN' ||
+                        req.user.user_name !== ''
                     ) {
                         next();
                     } else {
-                        res.status(403).json({
-                            messenger: "You're not allow to other",
-                        });
+                        next(
+                            new BadRequestError({
+                                code: 401,
+                                context: {
+                                    messenger: "You're not allow to other",
+                                },
+                            })
+                        );
                     }
+                } else {
+                    next(
+                        new BadRequestError({
+                            code: 401,
+                            context: {
+                                messenger: "You're not allow to other",
+                            },
+                        })
+                    );
                 }
-            } catch (err) {
-                res.status(500).json({
-                    messenger: "Have wrong error !!! ",
-                });
-            }
-        });
+            });
+        } catch (err) {
+            next(err);
+        }
     },
     //Verify Upadte User
     verifyUpdateUser: (req: Request, res: Response, next: NextFunction) => {
-        middleware.verifyTokenAndAdmin(req, res, () => {
-            const data = req.body;
-            for (let key in data) {
-                if (replaceStringNoSpace(data[key]) === "") {
-                    res.status(428).json({
-                        messenger: "Request invalid data",
-                    });
-                    break;
+        try {
+            middleware.verifyTokenAndAdmin(req, res, () => {
+                const data = req.body;
+                for (let key in data) {
+                    if (replaceStringNoSpace(data[key]) === '') {
+                        next(
+                            new BadRequestError({
+                                code: 400,
+                                context: {
+                                    message: 'Request invalid data',
+                                },
+                            })
+                        );
+                    }
                 }
-            }
-            next();
-        });
+                next();
+            });
+        } catch (err) {
+            next(err);
+        }
     },
 
     // Verify Refresh Token
-    verifyFrefreshToken: (
-        req: TVerifyRefreshToken,
-        res: Response,
-        next: NextFunction
-    ) => {
-        const {
-            headers: { cookie },
-        } = req;
-        if (cookie) {
-            const values = cookie.split(";").reduce(
-                (res, item) => {
-                    const data = item.trim().split("=");
-                    return { ...res, [data[0]]: data[1] };
-                },
-                { refreshToken: "" }
-            );
-            const refreshToken: string = values?.refreshToken;
-            jwt.verify(
-                refreshToken,
-                process.env.JWT_REFESH_SECRET!,
-                async (err: any, user: any) => {
-                    if (err) {
-                        res.status(403).json({
-                            messenger: "Token has expired !!!",
-                        });
-                    } else {
-                        const refreshTokenFromRedis = await client.get(
-                            `refreshToken${user.id}`
-                        );
+    verifyFrefreshToken: async (req: TVerifyRefreshToken, res: Response, next: NextFunction) => {
+        try {
+            const rawCookies = (req?.headers?.refreshtoken as string) || '';
+            const refreshToken = rawCookies.split('=')[1]; //get refreshToken
 
-                        if (refreshToken === refreshTokenFromRedis) {
-                            req.user = user;
-                            next();
-                        }
+            if (refreshToken) {
+                jwt.verify(refreshToken, process.env.JWT_REFESH_SECRET!, async (err: any, user: any) => {
+                    if (err) {
+                        next(
+                            new BadRequestError({
+                                code: 400,
+                                context: {
+                                    message: 'Refresh Token is Expred!',
+                                },
+                                logging: true,
+                            })
+                        );
                     }
-                }
-            );
+                    const refreshTokenFromRedis = await client.get(`refreshToken${user?.id}`);
+
+                    if (refreshToken === refreshTokenFromRedis) {
+                        req.user = user;
+                        next();
+                    } else {
+                        next(
+                            new BadRequestError({
+                                code: 401,
+                                context: {
+                                    message: 'Token is Expred !',
+                                },
+                                logging: true,
+                            })
+                        );
+                    }
+                });
+            }
+        } catch (err) {
+            next(err);
         }
     },
 };

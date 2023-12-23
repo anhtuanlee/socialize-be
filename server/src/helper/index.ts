@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import { Prisma } from '@prisma/client';
 
 export const replaceStringNoSpace = (...data: any) => {
     const regexStringReplace = /\s+/g;
@@ -25,4 +26,11 @@ export const generateRefeshToken = (user: TUser) => {
     return jwt.sign({ id: user!.id, user_name: user!.user_name, role: user!.role }, process.env.JWT_REFESH_SECRET!, {
         expiresIn: process.env.TIME_REFRESH_REFRESHTOKEN,
     });
+};
+type TCommonFriend = {
+    common_friend: string[];
+};
+export const sortedDataFriend = (data: any) => {
+    const sortData = data.sort((a: TCommonFriend, b: TCommonFriend) => b.common_friend.length - a.common_friend.length);
+    return sortData;
 };

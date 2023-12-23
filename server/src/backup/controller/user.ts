@@ -1,18 +1,22 @@
 import { Request, Response } from 'express';
-import prisma from '../db/db';
+import prisma from '../../db/db';
 
 export const userController = {
-    getUserCurrent: async (req: Request, res: Response) => {
+    getUserCurrent: async (req: TVerifyRefreshToken, res: Response) => {
         try {
-            const user_name = req.params.user_name;
-            const dataUser = await prisma.user.findUnique({
+            const user_name = req.params.user;
+            const self = req.user?.user_name as string;
+            let status = await userController.getFriendshipStatus(self, user_name);
+            let dataUser = await prisma.user.findUnique({
                 where: {
                     user_name: user_name,
                 },
             });
+
             if (dataUser) {
+                const data = { ...dataUser, status };
                 res.status(200).json({
-                    data: dataUser,
+                    data: data,
                 });
             } else {
                 res.status(403).json({
@@ -25,7 +29,6 @@ export const userController = {
             });
         }
     },
-
     deleteUser: async (req: Request, res: Response) => {
         const user_name = req.params.user_name;
 
@@ -75,14 +78,18 @@ export const userController = {
                 ],
             },
         }));
-        const areFriend = !!(await prisma.user.count({
+        const areFriend = !!(await prisma.friendOfUser.findFirst({
             where: {
-                user_name: self,
-                friends: {
-                    some: {
-                        user_name: reiceiver,
+                OR: [
+                    {
+                        friend_name: reiceiver,
+                        user_name: self,
                     },
-                },
+                    {
+                        user_name: reiceiver,
+                        friend_name: self,
+                    },
+                ],
             },
         }));
 
@@ -204,8 +211,16 @@ export const userController = {
                                 connect: [{ user_name: reiceiver }],
                             },
                             friends: {
-                                connect: {
-                                    user_name: reiceiver,
+                                connectOrCreate: {
+                                    where: {
+                                        user_name_friend_name: {
+                                            user_name: self,
+                                            friend_name: reiceiver,
+                                        },
+                                    },
+                                    create: {
+                                        friend_name: reiceiver,
+                                    },
                                 },
                             },
                         },
@@ -245,8 +260,16 @@ export const userController = {
                                 connect: [{ user_name: self }],
                             },
                             friends: {
-                                connect: {
-                                    user_name: self,
+                                connectOrCreate: {
+                                    where: {
+                                        user_name_friend_name: {
+                                            user_name: reiceiver,
+                                            friend_name: self,
+                                        },
+                                    },
+                                    create: {
+                                        friend_name: self,
+                                    },
                                 },
                             },
                         },
@@ -268,12 +291,18 @@ export const userController = {
         try {
             const { self, reiceiver } = req.body;
 
-            await prisma.friendRequest.delete({
+            await prisma.friendRequest.deleteMany({
                 where: {
-                    invition_name_invited_name: {
-                        invited_name: reiceiver,
-                        invition_name: self,
-                    },
+                    OR: [
+                        {
+                            invited_name: self,
+                            invition_name: reiceiver,
+                        },
+                        {
+                            invited_name: reiceiver,
+                            invition_name: self,
+                        },
+                    ],
                 },
             });
 
@@ -294,7 +323,7 @@ export const userController = {
                     user_name: self,
                     friends: {
                         some: {
-                            user_name: reiceiver,
+                            friend_name: reiceiver,
                         },
                     },
                 },
@@ -305,7 +334,6 @@ export const userController = {
                     prisma.user.update({
                         where: { user_name: self },
                         data: {
-                            friends: { disconnect: { user_name: reiceiver } },
                             followed_by: { disconnect: { user_name: reiceiver } },
                             following: { disconnect: { user_name: reiceiver } },
                         },
@@ -313,9 +341,22 @@ export const userController = {
                     prisma.user.update({
                         where: { user_name: reiceiver },
                         data: {
-                            friends: { disconnect: { user_name: self } },
                             followed_by: { disconnect: { user_name: self } },
                             following: { disconnect: { user_name: self } },
+                        },
+                    }),
+                    prisma.friendOfUser.deleteMany({
+                        where: {
+                            OR: [
+                                {
+                                    user_name: reiceiver,
+                                    friend_name: self,
+                                },
+                                {
+                                    user_name: self,
+                                    friend_name: reiceiver,
+                                },
+                            ],
                         },
                     }),
                 ]);
@@ -334,20 +375,37 @@ export const userController = {
     /**
      * @type {GET}
      */
-    getFriendOfUser: async (req: Request, res: Response) => {
+    getFriendOfUser: async (req: TVerifyAccessToken, res: Response) => {
         try {
-            const { user_name } = req.body;
-            const listFriends = await prisma.user.findFirst({
+            const { user_name } = req.params;
+            const self = req.user?.user_name as string;
+
+            const listFriends = await prisma.friendOfUser.findMany({
                 where: {
                     user_name: user_name,
+                    NOT: {
+                        friend_name: {
+                            equals: self,
+                        },
+                    },
                 },
-                include: {
-                    friends: true,
+                select: {
+                    friend: true,
                 },
             });
+            const dataListFriend = await Promise.all(
+                listFriends.map(async item => {
+                    // handle get status with ever user
+                    const status = await userController.getFriendshipStatus(self, item.friend.user_name);
+                    if (status) {
+                        const newData = { ...item.friend, status: status };
+                        return newData;
+                    }
+                })
+            );
             res.status(200).json({
                 messenger: 'OK',
-                data: listFriends,
+                data: dataListFriend,
             });
         } catch (e) {
             res.status(403).json({
@@ -381,32 +439,7 @@ export const userController = {
             });
         }
     },
-    getListFollower: async (req: Request, res: Response) => {
-        try {
-            const { user_name } = req.body;
-            const listFollower = await prisma.user.findUnique({
-                where: {
-                    user_name: user_name,
-                },
-                include: {
-                    followed_by: true,
-                    following: true,
-                },
-            });
-            if (listFollower) {
-                res.status(200).json({
-                    messenger: 'OK',
-                    data: listFollower,
-                });
-            } else {
-                throw new Error('User name not exist!');
-            }
-        } catch (e: any) {
-            res.status(403).json({
-                messenger: e.message,
-            });
-        }
-    },
+
     getMutualFriend: async (req: Request, res: Response) => {
         try {
             const { self, others } = req.body;
@@ -424,7 +457,9 @@ export const userController = {
             const [user1, user2] = result;
 
             // filter list friend common
-            const commonFriends = user1?.friends.filter(friend1 => user2?.friends.some(friend2 => friend1.user_name === friend2.user_name));
+            const commonFriends = user1?.friends.filter(
+                friend1 => user2?.friends.some(friend2 => friend1.user_name === friend2.user_name)
+            );
 
             res.status(200).json({
                 messenger: 'OK',
@@ -433,6 +468,118 @@ export const userController = {
         } catch (e) {
             res.status(403).json({
                 messenger: e,
+            });
+        }
+    },
+    async getFriendshipStatus(self: string, user_name: string) {
+        if (user_name === self) {
+            return 'self';
+        }
+
+        const isFriend = await prisma.user.findFirst({
+            where: {
+                user_name: self,
+                friends: {
+                    some: {
+                        user_name: self,
+                        friend_name: user_name,
+                    },
+                },
+            },
+        });
+
+        if (isFriend) {
+            return 'friend';
+        }
+
+        const hasPendingInvitation = await prisma.user.findFirst({
+            where: {
+                user_name: self,
+                invition_list: {
+                    some: {
+                        invited_name: user_name,
+                        invition_name: self,
+                    },
+                },
+            },
+        });
+
+        if (hasPendingInvitation) {
+            return 'pending';
+        }
+
+        const hasRejectedInvitation = await prisma.user.findUnique({
+            where: {
+                user_name: self,
+                invited_list: {
+                    some: {
+                        invited_name: self,
+                        invition_name: user_name,
+                    },
+                },
+            },
+        });
+
+        if (hasRejectedInvitation) {
+            return 'reject';
+        }
+
+        return 'stranger';
+    },
+
+    getListFollower: async (req: TVerifyAccessToken, res: Response) => {
+        try {
+            const { user_name } = req.params;
+            const self = req.user?.user_name;
+
+            const listFollower = await prisma.user.findUnique({
+                where: {
+                    user_name: user_name,
+                },
+                select: {
+                    followed_by: true,
+                },
+            });
+
+            if (listFollower) {
+                const newListFollower = listFollower.followed_by.filter(item => item.user_name !== self);
+                res.status(200).json({
+                    messenger: 'OK',
+                    data: newListFollower,
+                });
+            } else {
+                throw new Error('User name not exist!');
+            }
+        } catch (e: any) {
+            res.status(403).json({
+                messenger: e.message,
+            });
+        }
+    },
+    getListFollowing: async (req: TVerifyAccessToken, res: Response) => {
+        try {
+            const { user_name } = req.params;
+            const self = req.user?.user_name;
+            const listFollowing = await prisma.user.findUnique({
+                where: {
+                    user_name: user_name,
+                },
+                select: {
+                    following: true,
+                },
+            });
+            if (listFollowing) {
+                const newListFollowing = listFollowing.following.filter(item => item.user_name !== self);
+                res.status(200).json({
+                    messenger: 'OK',
+                    data: newListFollowing,
+                });
+            } else {
+                throw new Error('User name not exist!');
+            }
+        } catch (e: any) {
+            res.status(403).json({
+                messenger: e.message,
             });
         }
     },
