@@ -14,10 +14,11 @@ model User {
   id         String     @id @default(uuid())
   first_name String
   last_name  String
+  full_name  String
   email      String     @unique
   user_name  String     @unique
-  phone      Int        @unique
-  avatar     String     @default("https://img.freepik.com/premium-vector/account-icon-user-icon-vector-graphics_292645-552.jpg?w=740")
+  phone      String     @unique
+  avatar     String     @default("https://thicc-af.mywaifulist.moe/waifus/ganyu-genshin-impact/I12RIY4CzYIZtavjhONgqZ9ZxGMKfdQRo0x0BQQ0.jpg")
   cover      String     @default("https://climate.onep.go.th/wp-content/uploads/2020/01/default-image.jpg")
   role       Role       @default(USER)
   gender     TypeGender
@@ -26,8 +27,8 @@ model User {
   updateAt   DateTime   @updatedAt
 
   auth          Auth?
-  friends       User[]          @relation("friends")
-  friendOf      User[]          @relation("friends")
+  // friends       User[]          @relation("friends")
+  // friendOf      User[]          @relation("friends")
   invition_list FriendRequest[] @relation("InvitionList")
   invited_list  FriendRequest[] @relation("InvitedList")
   followed_by   User[]          @relation("UserFollows")
@@ -36,36 +37,34 @@ model User {
   comments      Comments[]      @relation("CommentUser")
   reaction      Reaction[]
   views         View[]
+  friends       FriendOfUser[]  @relation("Friends")
+  FriendOfUser  FriendOfUser[]  @relation("FriendOfUser")
 
   @@unique([user_name, email, phone])
 }
 
 // handle later 
-// model FriendOfUser {
-//   id          String   @id @default(uuid())
-//   user_name   String?
-//   friend_name String?
-//   createdAt   DateTime @default(now())
-//   updatedAt   DateTime @updatedAt
 
-//   relation_ship RelationshipStatus? @default(FRIEND)
-//   friend        Friend?            @relation(fields: [friend_name], references: [friend_name], onDelete: Cascade, onUpdate: Cascade)
-//   user          User?              @relation(fields: [user_name], references: [user_name], onDelete: Cascade)
+model FriendOfUser {
+  id            String             @id @default(uuid())
+  user_name     String
+  friend_name   String
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  relation_ship RelationshipStatus @default(FRIEND)
 
-//   @@index([user_name, friend_name])
-// }
+  user   User @relation("Friends", fields: [user_name], references: [user_name], onDelete: Cascade)
+  friend User @relation("FriendOfUser", fields: [friend_name], references: [user_name], onDelete: Cascade)
 
-// model Friend {
-//   id          String         @default(uuid())
-//   friend_name String         @unique
-//   users       FriendOfUser[]
-// }
+  @@unique([user_name, friend_name])
+  @@index([user_name, friend_name])
+}
 
 model Auth {
   id        String @id @default(uuid())
   user_name String @unique
   email     String @unique
-  phone     Int    @unique
+  phone     String @unique
   password  String
 
   user User @relation(fields: [user_name, email, phone], references: [user_name, email, phone], onDelete: Cascade)
@@ -102,17 +101,17 @@ model Post {
 
 model Comments {
   id        String     @id @unique @default(uuid())
-  content   String
+  content   String?
   img       String?
   createAt  DateTime   @default(now())
   updateAt  DateTime   @updatedAt
   user_name String
   user      User       @relation("CommentUser", fields: [user_name], references: [user_name])
   post_id   String
-  post      Post       @relation(fields: [post_id], references: [id])
+  post      Post       @relation(fields: [post_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   reaction  Reaction[]
   children  Comments[] @relation("Comment_Children")
-  parent    Comments?  @relation("Comment_Children", fields: [parent_id], references: [id])
+  parent    Comments?  @relation("Comment_Children", fields: [parent_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
   parent_id String?
 }
 
@@ -121,12 +120,13 @@ model Reaction {
   type       TypeReaction
   user_name  String
   user       User         @relation(fields: [user_name], references: [user_name])
-  comment_id String
-  comment    Comments     @relation(fields: [comment_id], references: [id])
-  post_id    String
-  post       Post         @relation(fields: [post_id], references: [id])
-  // storyId   String
-  // story     Stories      @relation(fields: [storyId], references: [id])
+  comment_id String?
+  comment    Comments?    @relation(fields: [comment_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  post_id    String?
+  post       Post?        @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([user_name, comment_id])
+  @@unique([user_name, post_id])
 }
 
 model View {
@@ -181,6 +181,13 @@ enum TypeGender {
   MALE
   FEMALE
   OTHERS
+}
+
+enum StatusSelf {
+  SELF
+  FRIEND
+  PENDING
+  STRANGER
 }
 
 // model Stories {
