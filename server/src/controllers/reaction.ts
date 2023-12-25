@@ -1,15 +1,17 @@
 import prisma from '../db/db';
-import { Response, Request } from 'express';
+import { Response } from 'express';
 import BadRequestError from '../error/BadRequestError';
 export const reactionController = {
   getReaction: async (req: TVerifyAccessToken, res: Response) => {
-    const { ...data } = req.query;
+    const { post_id, comment_id } = req.query;
 
     const result = await prisma.reaction.findMany({
       where: {
-        ...data,
+        ...(post_id && { post_id: post_id as string }),
+        ...(comment_id && { comment_id: comment_id as string }),
       },
     });
+
     res.status(200).json({
       message: 'OK',
       data: result,
@@ -17,9 +19,9 @@ export const reactionController = {
   },
   createReaction: async (req: TVerifyAccessToken, res: Response) => {
     const user = req.user;
-    const { type, postId, commentId, ...data } = req.body;
+    const { type, post_id, comment_id, ...data } = req.body;
 
-    if ((postId && commentId) || (!postId && !commentId)) {
+    if ((post_id && comment_id) || (!post_id && !comment_id)) {
       throw new BadRequestError({
         code: 400,
         context: {
@@ -27,12 +29,13 @@ export const reactionController = {
         },
       });
     }
+
     const result = await prisma.reaction.create({
       data: {
         type: type,
         user_name: user?.user_name,
-        ...(postId ? { post_id: postId } : {}),
-        ...(commentId ? { comment_id: commentId } : {}),
+        ...(post_id ? { post_id: post_id } : {}),
+        ...(comment_id ? { comment_id: comment_id } : {}),
         ...data,
       },
     });
@@ -42,20 +45,29 @@ export const reactionController = {
     });
   },
   updateReaction: async (req: TVerifyAccessToken, res: Response) => {
-    const user = req.user;
-    const { id, type } = req.body;
-    await prisma.reaction.update({
-      where: {
-        user_name: user?.user_name,
-        id: id,
-      },
-      data: {
-        type: type,
-      },
-    });
-    res.status(200).json({
-      message: 'Update Success!',
-    });
+    try {
+      const user = req.user;
+      const { id, type } = req.body;
+      await prisma.reaction.update({
+        where: {
+          user_name: user?.user_name,
+          id: id,
+        },
+        data: {
+          type: type,
+        },
+      });
+      res.status(200).json({
+        message: 'Update Success!',
+      });
+    } catch (err) {
+      throw new BadRequestError({
+        code: 401,
+        context: {
+          message: "You'r not authoreization!",
+        },
+      });
+    }
   },
   deleteReaction: async (req: TVerifyAccessToken, res: Response) => {
     const user = req.user;

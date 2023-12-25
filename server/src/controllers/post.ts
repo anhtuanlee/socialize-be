@@ -1,23 +1,45 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import prisma from '../db/db';
 
 export const postController = {
-    getAllPostUserController: async (req: TVerifyAccessToken, res: Response) => {
-        const user = req.user;
-        const dataPost = await prisma.post.findMany({
-            where: {
-                user_name: user?.user_name,
-            },
-            include: {
-                comment: true,
-                reaction: true,
-                user: true,
-                views: true,
-                _count: true,
-            },
-        });
-        res.status(200).json(dataPost);
+    getPost: async (req: TVerifyAccessToken, res: Response) => {
+        const { all, limit, offset } = req.query;
+        const skipCount = offset ? Number(offset) * Number(limit) : 0;
+        const skip = skipCount <= 0 ? 0 : skipCount;
+
+        if (!all) {
+            const dataPost = await prisma.post.findMany({
+                where: {
+                    comment: {
+                        some: {
+                            createAt: {
+                                lte: new Date(),
+                            },
+                        },
+                    },
+                },
+                take: 10,
+                skip: skip,
+                include: {
+                    comment: {
+                        take: 1,
+                        orderBy: {
+                            createAt: 'desc',
+                        },
+                    },
+                    reaction: true,
+                    user: true,
+                    views: true,
+                    _count: true,
+                },
+            });
+            res.status(200).json({
+                count: dataPost.length,
+                data: dataPost,
+            });
+        }
     },
+
     createPostController: async (req: TVerifyAccessToken, res: Response) => {
         const user = req.user?.user_name as string;
         const { ...data } = req.body;
@@ -60,7 +82,6 @@ export const postController = {
         const { id } = req.params;
         const user = req.user;
         const deleteConditions = user?.role === 'ADMIN' ? { id: id } : { user_name: user?.user_name, id: id };
-        console.log(deleteConditions);
 
         await prisma.post.delete({
             where: deleteConditions,

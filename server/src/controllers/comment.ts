@@ -1,41 +1,38 @@
 import { Response } from 'express';
-import { json } from 'stream/consumers';
 import prisma from '../db/db';
-import BadRequestError from '../error/BadRequestError';
+import { handleOffSetPage } from '../helper';
 
 export const commentController = {
-    getAllComments: async (req: TVerifyAccessToken, res: Response) => {
-        const { type, user_name, id } = req.query;
-        if ((type === 'user' && user_name) || (type === 'post' && id)) {
-            const dataQuery = type === 'user' ? { user_name: user_name as string } : { post_id: id as string };
-            const comments = await prisma.comments.findMany({
-                where: dataQuery,
-            });
+    getComment: async (req: TVerifyAccessToken, res: Response) => {
+        const { post_id, limit, offset } = req.query;
 
-            res.status(200).json({
-                message: 'OK',
-                data: comments,
-            });
-        } else {
-            throw new BadRequestError({
-                code: 404,
-                context: {
-                    message: 'Data not match!',
-                },
-            });
-        }
+        const { ofs, lm } = handleOffSetPage(offset as string, limit as string);
+        const comments = await prisma.comments.findMany({
+            where: {
+                post_id: post_id as string,
+                parent_id: null,
+            },
+            take: lm,
+            skip: ofs,
+        });
+        res.status(200).json({
+            message: 'OK',
+            data: comments,
+        });
     },
     createComment: async (req: TVerifyAccessToken, res: Response) => {
-        const user_name = req.user?.user_name;
-        const { post_id, ...data } = req.body;
+        const user = req.user;
+        const { post_id, parent_id, ...data } = req.body;
 
         const result = await prisma.comments.create({
             data: {
-                user_name: user_name,
+                user_name: user!.user_name,
                 post_id: post_id,
+                ...(parent_id && { parent_id: parent_id }),
                 ...data,
             },
         });
+
         if (result) {
             res.status(200).json({
                 message: 'OK',

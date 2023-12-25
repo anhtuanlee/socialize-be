@@ -4,84 +4,167 @@
 
 ## API
 
-- Authencation : /auth ### `Create USER` (`method: POST`): "URL/register" - body: {
-  "firstName": **,
-  "lastName": **,
-  "email": **,
-  "password": **,
-  "phone": **,
-  "bithday": **,
-  "gender": \_\_ }
+## Authencation : /auth
 
-      ### `Login USER` (`method: POST`): "URL/login"
-      - body: {userName: "" or phone:""  , password: ""}
-      ### `Logout USER` (`method: POST`): "URL/logout"
-      - header: {cookie} , save refreshToken in cookie after login
-      ### `RefreshToken` (`method: POST`): "URL/refreshToken"
-      - header:{cookie} , after login, save refreshToken to cookie,
-      generate new accessToken use every where.  "
-      ### `Change Password` (`method: PUT`): "URL/refreshToken"
-      - header: { Authencation: Bearer: accessToken}
-      - body: {userName: __, passwordCurrent: __, password: __}
-      generate new accessToken use every where.  "
+### `Create USER` (`method: POST`): "URL/register" - body: {
 
-  ==================================================================
+"firstName": **,
+"lastName": **,
+"email": **,
+"password": **,
+"phone": **,
+"bithday": **,
+"gender": \_\_ }
 
-- User: /users
+### `Login USER` (`method: POST`): "URL/login"
 
-  ### `getUserCurrent` (`method: GET`): "URL/:userName"
+- body: {userName: "" or phone:"" , password: ""}
 
-  - params: {userName: \_\_}
+### `Logout USER` (`method: POST`): "URL/logout"
 
-  ### `deleteUser` (`method: DELETE`): "URL/delete/:userName"
+- header: {cookie} , save refreshToken in cookie after login
 
-  - params: { userName: \_\_}
+### `RefreshToken` (`method: POST`): "URL/refreshToken"
 
-  ### `updateUser` (`method: PUT`): "URL/update/:userName"
+- header:{cookie} , after login, save refreshToken to cookie,
+  generate new accessToken use every where. "
 
-  - params: { userName: \_\_}
-  - body: { firstName:** , lastName: ** , avatar:** ,cover:** , bithday:** , gender: ** }
+### `Change Password` (`method: PUT`): "URL/refreshToken"
 
-  ==================================================================
+- header: { Authencation: Bearer: accessToken}
+- body: {userName: **, passwordCurrent: **, password: \_\_}
+  generate new accessToken use every where. "
 
-- Friend /users/friend/
+==================================================================
 
-  ### `ADD` (`method: POST`): "URL/add"
+## User: /users
 
-  - body: { self:user_name, reiceiver: friend_name },
-  - header: { accessToken: Bear \_\_\_}
+### `getUserCurrent` (`method: GET`): "URL/:userName"
 
-  ### `ACCEPT` (`method: POST`): "URL/accept"
+- params: {userName: \_\_}
 
-  - body: { self:user_name, reiceiver: friend_name },
-  - header: { accessToken: Bear \_\_\_}
+### `deleteUser` (`method: DELETE`): "URL/delete/:userName"
 
-  ### `REJECT` (`method: POST`): "URL/reject"
+- params: { userName: \_\_}
 
-  - body: { self:user_name, reiceiver: friend_name },
-  - header: { accessToken: Bear \_\_\_}
+### `updateUser` (`method: PUT`): "URL/update/:userName"
 
-  ### `DELETE` (`method: POST`): "URL/delete"
+- params: { userName: \_\_}
+- body: { firstName:** , lastName: ** , avatar:** ,cover:** , bithday:** , gender: ** }
 
-  - body: { self:user_name, reiceiver: friend_name },
-  - header: { accessToken: Bear \_\_\_}
+==================================================================
 
-  ### `LIST FRIEND` (`method: GET`): "URL/"
+## Friend /users/friend/
 
-  - body: { user_name: \_\_}
-  - header: { accessToken: Bear \_\_\_}
+### `ADD` (`method: POST`): "URL/add"
 
-  ### `LIST INVITE REQUEST ` (`method: GET`): "URL/invite_request"
+- body: { self:user_name, reiceiver: friend_name },
+- header: { accessToken: Bear \_\_\_}
 
-  - body: { user_name: \_\_}
-  - header: { accessToken: Bear \_\_\_}
+### `ACCEPT` (`method: POST`): "URL/accept"
 
-  ### `LIST FOLLOWER ` (`method: GET`): "URL/follower "
+- body: { self:user_name, reiceiver: friend_name },
+- header: { accessToken: Bear \_\_\_}
 
-  - body: { user_name: \_\_}
-  - header: { accessToken: Bear \_\_\_}
+### `REJECT` (`method: POST`): "URL/reject"
 
-  ### `COMMOM FRIEND` (`method: GET`): "URL/mutual_friend"
+- body: { self:user_name, reiceiver: friend_name },
+- header: { accessToken: Bear \_\_\_}
 
-  - body: { user_name: ** , others: ** }
-  - header: { accessToken: Bear \_\_\_ }
+### `DELETE` (`method: POST`): "URL/delete"
+
+- body: { self:user_name, reiceiver: friend_name },
+- header: { accessToken: Bear \_\_\_}
+
+### `LIST FRIEND` (`method: GET`): "URL/"
+
+- body: { user_name: \_\_}
+- header: { accessToken: Bear \_\_\_}
+
+### `LIST INVITE REQUEST ` (`method: GET`): "URL/invite_request"
+
+- body: { user_name: \_\_}
+- header: { accessToken: Bear \_\_\_}
+
+### `LIST FOLLOWER ` (`method: GET`): "URL/follower "
+
+- body: { user_name: \_\_}
+- header: { accessToken: Bear \_\_\_}
+
+### `COMMOM FRIEND` (`method: GET`): "URL/mutual_friend"
+
+- body: { user_name: ** , others: ** }
+- header: { accessToken: Bear \_\_\_ }
+
+==================================================================
+
+## Post /posts
+
+### `GET` (`method: GET`): "URL?limit=10&offset=1"
+
+- query: {offset:**, limit: **} ,
+- header: { accessToken: Bear \_\_\_}
+
+### `CREATE` (`method: POST`): "URL/create"
+
+- body: { content:"**", img: [ ** ]},
+- header: { accessToken: Bear \_\_\_}
+
+### `UPDATE` (`method: PUT`): "URL/update/:id"
+
+- params: {id : "\_\_\_"}
+- body: {content:"**", img: [ ** ]},
+- header: { accessToken: Bear \_\_\_}
+
+### `DELETE` (`method: DELETE`): "URL/delete/:id"
+
+- params: {id: "\_\_"}
+- header: { accessToken: Bear \_\_\_}
+
+==================================================================
+
+## Comment /comments
+
+### `GET` (`method: GET`): "URL?offset*&limit*&post_id"
+
+- query: {offset: **_, limit: _**, post_id: \_\_\_}
+- header: { accessToken: Bear \_\_\_}
+
+### `CREATE` (`method: POST`): "URL/create"
+
+- body: { post\*id: **, parent_id: **, content: \*\*\*, img: \_\*\*}
+- header: { accessToken: Bear \_\_\_}
+
+### `UPDATE` (`method: PUT`): "URL/update"
+
+- body: { id: **, content: \_**, img: \_\_\_}
+- header: { accessToken: Bear \_\_\_}
+
+### `DELETE` (`method: DELETE`): "URL/delete/:id"
+
+- params: { id: **, content: \_**, img: \_\_\_}
+- header: { accessToken: Bear \_\_\_}
+
+=====================================
+
+## Reaction /reactions
+
+### `GET` (`method: GET`): "URL?comment_id||post_id"
+
+- query: { post\*id: \*\** || comment*id: \*\*\* }
+- header: { accessToken: Bear \_\_\_}
+
+### `CREATE` (`method: POST`): "URL/create"
+
+- body: { post_id: ** | parent_id: **, type: CRY | LOVE| LIKE | HAHA}
+- header: { accessToken: Bear \_\_\_}
+
+### `UPDATE` (`method: PUT`): "URL/create"
+
+- body: { post_id: ** | parent_id: **, type: CRY | LOVE| LIKE | HAHA}
+- header: { accessToken: Bear \_\_\_}
+
+### `DELETE` (`method: DELETE`): "URL/delete/:id"
+
+- params: {id: \_\_\_}
+- header: { accessToken: Bear \_\_\_}

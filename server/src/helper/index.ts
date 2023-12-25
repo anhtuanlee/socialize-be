@@ -34,3 +34,11 @@ export const sortedDataFriend = (data: any) => {
     const sortData = data.sort((a: TCommonFriend, b: TCommonFriend) => b.common_friend.length - a.common_friend.length);
     return sortData;
 };
+
+export const handleOffSetPage = (offset?: string, limit?: string) => {
+    const newOffset = offset ? Number(offset) * Number(limit) : 0;
+    return {
+        ofs: newOffset < 1 ? 0 : newOffset,
+        lm: Number(limit),
+    };
+};

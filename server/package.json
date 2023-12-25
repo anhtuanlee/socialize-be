@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev:server": "nodemon --watch src --exec ts-node src/index.ts studio",
     "studio": "npx prisma studio",
-    "dev": "start npm run dev:server && npm run studio"
+    "dev": "npm run studio && npm run dev:server"
   },
   "author": "",
   "license": "ISC",
