@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import { replaceStringNoSpace } from '../helper';
 import { client } from '../db/redisdb';
 import BadRequestError from '../error/BadRequestError';
+import { upload } from './uploadImg';
+import multer from 'multer';
 
 export const middleware = {
     // verify AccessToken
@@ -103,8 +105,7 @@ export const middleware = {
     // Verify Refresh Token
     verifyFrefreshToken: async (req: TVerifyRefreshToken, res: Response, next: NextFunction) => {
         try {
-            const rawCookies = (req?.headers?.refreshtoken as string) || '';
-            const refreshToken = rawCookies.split('=')[1]; //get refreshToken
+            const refreshToken = req.cookies.refreshToken;
 
             if (refreshToken) {
                 jwt.verify(refreshToken, process.env.JWT_REFESH_SECRET!, async (err: any, user: any) => {
@@ -127,18 +128,37 @@ export const middleware = {
                     } else {
                         next(
                             new BadRequestError({
-                                code: 401,
+                                code: 400,
                                 context: {
-                                    message: 'Token is Expred !',
+                                    message: 'Token is Expred!',
                                 },
-                                logging: true,
                             })
                         );
                     }
+                });
+            } else {
+                throw new BadRequestError({
+                    code: 400,
+                    context: {
+                        message: 'Pls login again!',
+                    },
                 });
             }
         } catch (err) {
             next(err);
         }
+    },
+    uploadz: (req: Request, res: Response, next: NextFunction) => {
+        upload(req, res, function (err: any) {
+            if (err instanceof multer.MulterError) {
+                console.log('xfpf', err);
+            } else if (err) {
+                console.log('err', err);
+            }
+
+            console.log('file', req);
+
+            next();
+        });
     },
 };

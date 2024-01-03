@@ -27,8 +27,6 @@ model User {
   updateAt   DateTime   @updatedAt
 
   auth          Auth?
-  // friends       User[]          @relation("friends")
-  // friendOf      User[]          @relation("friends")
   invition_list FriendRequest[] @relation("InvitionList")
   invited_list  FriendRequest[] @relation("InvitedList")
   followed_by   User[]          @relation("UserFollows")
@@ -87,11 +85,13 @@ model FriendRequest {
 }
 
 model Post {
-  id        String     @id @default(uuid())
-  content   String
-  img       String[]
-  user      User       @relation(fields: [user_name], references: [user_name])
+  id      String   @id @default(uuid())
+  content String[]
+  img     String[]
+  mode    ModePost @default(PUBLIC)
+
   user_name String
+  user      User       @relation(fields: [user_name], references: [user_name])
   comment   Comments[]
   reaction  Reaction[]
   views     View[]
@@ -101,7 +101,7 @@ model Post {
 
 model Comments {
   id        String     @id @unique @default(uuid())
-  content   String?
+  content   String[]
   img       String?
   createAt  DateTime   @default(now())
   updateAt  DateTime   @updatedAt
@@ -113,6 +113,7 @@ model Comments {
   children  Comments[] @relation("Comment_Children")
   parent    Comments?  @relation("Comment_Children", fields: [parent_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
   parent_id String?
+  level     Int        @default(0)
 }
 
 model Reaction {
@@ -188,6 +189,12 @@ enum StatusSelf {
   FRIEND
   PENDING
   STRANGER
+}
+
+enum ModePost {
+  PRIVATE
+  FRIEND
+  PUBLIC
 }
 
 // model Stories {

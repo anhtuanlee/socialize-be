@@ -5,12 +5,13 @@ import morgan from 'morgan';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import 'express-async-errors';
+// import * as multer from 'multer';
 import { errorHandler } from './middleware/error';
 import router from './routes';
 
 const app = express();
 
-app.use(cors());
+app.use(cors({ origin: 'http://localhost:3001', credentials: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
 app.use(express.json());

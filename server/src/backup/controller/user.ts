@@ -56,7 +56,6 @@ export const userController = {
                 messenger: 'Update info success !!!',
             });
         } catch (err) {
-            console.log(err);
             res.status(500).json({
                 message: 'Have wrong error',
             });
