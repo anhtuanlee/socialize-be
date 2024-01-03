@@ -1,38 +1,58 @@
 import { Response } from 'express';
 import prisma from '../db/db';
+import { handleOffSetPage } from '../helper';
+import BadRequestError from '../error/BadRequestError';
+import { error } from 'console';
+import cloudinary from '../config/cloudinary';
 
 export const postController = {
+    validatePost(content: string[]) {
+        const newContent = content.filter(text => text.trim() !== '');
+        if (newContent.length === 0) {
+            return false;
+        } else {
+            return true;
+        }
+    },
+
     getPost: async (req: TVerifyAccessToken, res: Response) => {
         const { all, limit, offset } = req.query;
-        const skipCount = offset ? Number(offset) * Number(limit) : 0;
-        const skip = skipCount <= 0 ? 0 : skipCount;
+        const { ofs, lm } = handleOffSetPage(offset as string, limit as string);
 
         if (!all) {
             const dataPost = await prisma.post.findMany({
-                where: {
-                    comment: {
-                        some: {
-                            createAt: {
-                                lte: new Date(),
-                            },
-                        },
-                    },
+                take: lm,
+                skip: ofs,
+                orderBy: {
+                    createAt: 'desc',
                 },
-                take: 10,
-                skip: skip,
                 include: {
                     comment: {
-                        take: 1,
+                        // take: 3,
                         orderBy: {
                             createAt: 'desc',
                         },
+                        include: {
+                            user: true,
+                            children: {
+                                include: {
+                                    user: true,
+                                    children: {
+                                        include: {
+                                            user: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
                     },
-                    reaction: true,
-                    user: true,
                     views: true,
+                    user: true,
                     _count: true,
+                    reaction: true,
                 },
             });
+
             res.status(200).json({
                 count: dataPost.length,
                 data: dataPost,
@@ -41,18 +61,60 @@ export const postController = {
     },
 
     createPostController: async (req: TVerifyAccessToken, res: Response) => {
-        const user = req.user?.user_name as string;
-        const { ...data } = req.body;
-        const result = await prisma.post.create({
-            data: {
-                user_name: user,
-                ...data,
-            },
-        });
-        res.status(201).json({
-            message: 'Success!',
-            data: result,
-        });
+        try {
+            console.log(req.body.formImage);
+            res.json({
+                xx: req.body.formImage,
+            });
+            //   for (let image of images) {
+            //     const result = await cloudinary.uploader.upload(image);
+            //     uploadImages.push({
+            //       url: result.secure_url,
+            //       publicId: result.public_id,
+            //     });
+            //   }
+
+            // const user = req.user?.user_name as string;
+            // const { content, img, ...data } = req.body;
+            // const isHaveContent = postController.validatePost(content);
+            // console.log('file', req.files);
+            // const images = req.files.map((file: any) => file.path);
+            // const uploadImages = [];
+            // for (let image of images) {
+            //     const result = await cloudinary.uploader.upload(image);
+            //     uploadImages.push({
+            //         url: result.secure_url,
+            //         publicId: result.public_id,
+            //     });
+            // }
+            // console.log('image', uploadImages);
+
+            // if (isHaveContent) {
+            //     const result = await prisma.post.create({
+            //         data: {
+            //             user_name: user,
+            //             content: content,
+            //             ...data,
+            //         },
+            //     });
+            //     res.status(201).json({
+            //         message: 'Success!',
+            //         data: result,
+            //     });
+            // } else {
+            //     throw new BadRequestError({
+            //         code: 400,
+            //         context: {
+            //             message: "Post content can't empty data!",
+            //         },
+            //     });
+            // }
+        } catch (err: any) {
+            console.log('err', err);
+            res.status(400).json({
+                error: err.mesage,
+            });
+        }
     },
     updatePostController: async (req: TVerifyAccessToken, res: Response) => {
         const user = req.user?.user_name;

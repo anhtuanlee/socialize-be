@@ -36,7 +36,7 @@ export const sortedDataFriend = (data: any) => {
 };
 
 export const handleOffSetPage = (offset?: string, limit?: string) => {
-    const newOffset = offset ? Number(offset) * Number(limit) : 0;
+    const newOffset = offset ? (Number(offset) - 1) * Number(limit) : 0;
     return {
         ofs: newOffset < 1 ? 0 : newOffset,
         lm: Number(limit),
