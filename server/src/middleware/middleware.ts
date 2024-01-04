@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import { replaceStringNoSpace } from '../helper';
 import { client } from '../db/redisdb';
 import BadRequestError from '../error/BadRequestError';
-import { upload } from './uploadImg';
 import multer from 'multer';
 
 export const middleware = {
@@ -148,17 +147,36 @@ export const middleware = {
             next(err);
         }
     },
-    uploadz: (req: Request, res: Response, next: NextFunction) => {
-        upload(req, res, function (err: any) {
-            if (err instanceof multer.MulterError) {
-                console.log('xfpf', err);
-            } else if (err) {
-                console.log('err', err);
-            }
 
-            console.log('file', req);
-
-            next();
-        });
-    },
+    uploadHandleMiddleware:
+        (uploadAction: (req: Request, res: Response, callback: (err?: any) => void) => void) =>
+            (req: TVerifyAccessToken, res: Response, next: NextFunction) => {
+                middleware.verifyToken(req, res, () => {
+                    if (req.user) {
+                        uploadAction(req, res, (err: any) => {
+                            if (err instanceof multer.MulterError) {
+                                next(
+                                    new BadRequestError({
+                                        code: 404,
+                                        context: {
+                                            message: "Haven't file upload",
+                                        },
+                                    })
+                                );
+                            } else if (err) {
+                                next(
+                                    new BadRequestError({
+                                        code: 404,
+                                        context: {
+                                            message: 'Check your file!',
+                                        },
+                                    })
+                                );
+                            } else {
+                                next();
+                            }
+                        });
+                    }
+                });
+            },
 };

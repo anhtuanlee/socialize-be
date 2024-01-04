@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { Prisma } from '@prisma/client';
+import cloudinary from '../config/cloudinary';
+import { UploadApiResponse } from 'cloudinary';
 
 export const replaceStringNoSpace = (...data: any) => {
     const regexStringReplace = /\s+/g;
@@ -41,4 +42,12 @@ export const handleOffSetPage = (offset?: string, limit?: string) => {
         ofs: newOffset < 1 ? 0 : newOffset,
         lm: Number(limit),
     };
+};
+export const handleUpdateImg = async (images: Express.Multer.File[]): Promise<string[]> => {
+    const uploadImages = [];
+
+    for (let image of images) {
+        uploadImages.push(image.path);
+    }
+    return uploadImages;
 };
