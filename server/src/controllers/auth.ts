@@ -9,7 +9,7 @@ export const authController = {
   verifyPassword: async (res: Response, passwordCurrent: string, passwordCheck: string) => {
     if (passwordCheck && passwordCurrent) {
       const isValidPassword = await bcrypt.compare(passwordCheck, passwordCurrent);
-
+      //check
       if (!isValidPassword) {
         throw new BadRequestError({
           code: 400,
