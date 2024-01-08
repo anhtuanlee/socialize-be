@@ -1,9 +1,11 @@
 import { Response } from 'express';
 import prisma from '../db/db';
-import { handleOffSetPage } from '../helper';
+import { handleOffSetPage, handleUpdateImg } from '../helper';
 import BadRequestError from '../error/BadRequestError';
 import { error } from 'console';
 import cloudinary from '../config/cloudinary';
+import { File } from 'buffer';
+import { UploadApiResponse } from 'cloudinary';
 
 export const postController = {
     validatePost(content: string[]) {
@@ -16,8 +18,8 @@ export const postController = {
     },
 
     getPost: async (req: TVerifyAccessToken, res: Response) => {
-        const { all, limit, offset } = req.query;
-        const { ofs, lm } = handleOffSetPage(offset as string, limit as string);
+        const { all, limit, page } = req.query;
+        const { ofs, lm } = handleOffSetPage(page as string, limit as string);
 
         if (!all) {
             const dataPost = await prisma.post.findMany({
@@ -61,58 +63,31 @@ export const postController = {
     },
 
     createPostController: async (req: TVerifyAccessToken, res: Response) => {
-        try {
-            console.log(req.body.formImage);
-            res.json({
-                xx: req.body.formImage,
+        const user = req.user?.user_name as string;
+        const { content, mode } = req.body;
+
+        const isHaveContent = postController.validatePost(content);
+        const files = req.files as Express.Multer.File[];
+        const images = (await handleUpdateImg(files)) as string[];
+        if (isHaveContent || images.length > 0) {
+            const result = await prisma.post.create({
+                data: {
+                    user_name: user,
+                    content: content,
+                    img: images,
+                    mode: mode,
+                },
             });
-            //   for (let image of images) {
-            //     const result = await cloudinary.uploader.upload(image);
-            //     uploadImages.push({
-            //       url: result.secure_url,
-            //       publicId: result.public_id,
-            //     });
-            //   }
-
-            // const user = req.user?.user_name as string;
-            // const { content, img, ...data } = req.body;
-            // const isHaveContent = postController.validatePost(content);
-            // console.log('file', req.files);
-            // const images = req.files.map((file: any) => file.path);
-            // const uploadImages = [];
-            // for (let image of images) {
-            //     const result = await cloudinary.uploader.upload(image);
-            //     uploadImages.push({
-            //         url: result.secure_url,
-            //         publicId: result.public_id,
-            //     });
-            // }
-            // console.log('image', uploadImages);
-
-            // if (isHaveContent) {
-            //     const result = await prisma.post.create({
-            //         data: {
-            //             user_name: user,
-            //             content: content,
-            //             ...data,
-            //         },
-            //     });
-            //     res.status(201).json({
-            //         message: 'Success!',
-            //         data: result,
-            //     });
-            // } else {
-            //     throw new BadRequestError({
-            //         code: 400,
-            //         context: {
-            //             message: "Post content can't empty data!",
-            //         },
-            //     });
-            // }
-        } catch (err: any) {
-            console.log('err', err);
-            res.status(400).json({
-                error: err.mesage,
+            res.status(201).json({
+                message: 'Success!',
+                data: result,
+            });
+        } else {
+            throw new BadRequestError({
+                code: 400,
+                context: {
+                    message: "Post content can't empty data!",
+                },
             });
         }
     },
