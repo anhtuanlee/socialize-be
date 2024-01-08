@@ -18,8 +18,8 @@ export const postController = {
     },
 
     getPost: async (req: TVerifyAccessToken, res: Response) => {
-        const { all, limit, offset } = req.query;
-        const { ofs, lm } = handleOffSetPage(offset as string, limit as string);
+        const { all, limit, page } = req.query;
+        const { ofs, lm } = handleOffSetPage(page as string, limit as string);
 
         if (!all) {
             const dataPost = await prisma.post.findMany({

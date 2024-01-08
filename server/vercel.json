@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "name": "socialize",
+  "builds": [
+    {
+      "src": "server.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["db.json"]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/server.ts"
+    }
+  ]
+}
